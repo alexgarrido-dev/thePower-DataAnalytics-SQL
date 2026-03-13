@@ -42,9 +42,10 @@ SELECT MAX(length) AS mayor_duracion, MIN(length) AS menor_duracion
 FROM film;
 
 -- 11. Encuentra lo que costó el antepenúltimo alquiler ordenado por día.
-SELECT amount 
-FROM payment 
-ORDER BY payment_date DESC 
+SELECT p.amount 
+FROM rental r
+JOIN payment p ON r.rental_id = p.rental_id
+ORDER BY r.rental_date DESC 
 LIMIT 1 OFFSET 2;
 
 -- 12. Encuentra el título de las películas en la tabla "film" que no sean ni 'NC-17' ni 'G' en cuanto a su clasificación.
@@ -146,13 +147,13 @@ HAVING COUNT(film_id) > 40;
 SELECT f.title, COUNT(i.inventory_id) AS cantidad_disponible 
 FROM film f 
 LEFT JOIN inventory i ON f.film_id = i.film_id 
-GROUP BY f.title;
+GROUP BY f.film_id, f.title;
 
 -- 30. Obtener los actores y el número de películas en las que ha actuado.
 SELECT a.first_name, a.last_name, COUNT(fa.film_id) AS numero_peliculas 
 FROM actor a 
 JOIN film_actor fa ON a.actor_id = fa.actor_id 
-GROUP BY a.actor_id;
+GROUP BY a.actor_id, a.first_name, a.last_name;
 
 -- 31. Obtener todas las películas y mostrar los actores que han actuado en ellas, incluso si algunas películas no tienen actores asociados.
 SELECT f.title, a.first_name, a.last_name 
@@ -248,7 +249,7 @@ WHERE fa.film_id IS NULL;
 SELECT a.first_name, a.last_name, COUNT(fa.film_id) AS cantidad_peliculas 
 FROM actor a 
 LEFT JOIN film_actor fa ON a.actor_id = fa.actor_id 
-GROUP BY a.actor_id;
+GROUP BY a.actor_id, a.first_name, a.last_name;
 
 -- 48. Crea una vista llamada "actor_num_peliculas" que muestre los nombres de los actores y el número de películas en las que han participado.
 CREATE VIEW actor_num_peliculas AS 
@@ -344,8 +345,11 @@ WHERE r.return_date - r.rental_date > INTERVAL '8 days';
 SELECT f.title 
 FROM film f 
 JOIN film_category fc ON f.film_id = fc.film_id 
-JOIN category c ON fc.category_id = c.category_id 
-WHERE c.name = 'Animation';
+WHERE fc.category_id = (
+    SELECT category_id 
+    FROM category 
+    WHERE name = 'Animation'
+);
 
 -- 59. Encuentra los nombres de las películas que tienen la misma duración que la película con el título 'Dancing Fever'. Ordena los resultados alfabéticamente por título de película.
 SELECT title 
@@ -391,4 +395,5 @@ CROSS JOIN store st;
 SELECT c.customer_id, c.first_name, c.last_name, COUNT(r.rental_id) AS total_alquiladas 
 FROM customer c 
 LEFT JOIN rental r ON c.customer_id = r.customer_id 
+
 GROUP BY c.customer_id, c.first_name, c.last_name;
